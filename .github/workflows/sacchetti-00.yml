@@ -17,6 +17,7 @@ jobs:
       - run: python --
       - run: pip install scikit-learn joblib pandas
       - run: pip install optuna 
+      - run: pip install xgboost
       - run: python heart.py
         working-directory: sacchetti
       - run: ls -la
