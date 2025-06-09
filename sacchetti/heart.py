@@ -160,5 +160,5 @@ def objective(trial):
     return recall
 
 studyHeartRandom = optuna.create_study(storage="sqlite:///model_selection.db", study_name="studyHeartDefinitive", direction="maximize" , load_if_exists=True)
-studyHeartRandom.optimize(objective, n_trials=15, show_progress_bar=True)
+studyHeartRandom.optimize(objective, n_trials=2, show_progress_bar=True)
 joblib.dump(studyHeartRandom, 'bestHeartPred.joblib')
