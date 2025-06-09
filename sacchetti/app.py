@@ -7,7 +7,6 @@ model = joblib.load('sacchetti/bestHeartPred.joblib')
 @app.route('/infer', methods=['POST'])
 def hello():
     data = request.get_json()
-    name = data.get('name', 'Stranger')
     try:
         data = request.get_json()
         input_df = pd.DataFrame([data]) if isinstance(data, dict) else pd.DataFrame(data)
