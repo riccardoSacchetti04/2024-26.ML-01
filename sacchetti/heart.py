@@ -83,82 +83,52 @@ x = df.drop(columns=['HadHeartAttack'])
 y = df['HadHeartAttack']
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
-def getEncoder(trial, group):
-    if group == 'bool':
-        encoder = trial.suggest_categorical('enc_bool', ['onehot', 'binary', 'target'])
-    
-    elif group == 'ord':
-        encoder = trial.suggest_categorical('enc_ord', ['ordinal', 'onehot', 'target'])
-    
-    elif group == 'other':
-        encoder = trial.suggest_categorical('enc_oth', ['target', 'onehot'])
+best_paramsRandom={'enc_bool': 'binary',
+ 'enc_ord': 'target',
+ 'ord__target_smoothing': 2.044188250637812,
+ 'enc_oth': 'onehot',
+ 'other__onehot_min_freq': 1,
+ 'n_estimators': 185,
+ 'max_depth': 5,
+ 'criterion': 'gini'}
 
-    if encoder == "onehot":
-        return OneHotEncoder(
-            handle_unknown="infrequent_if_exist",
-            sparse_output=False,
-            min_frequency=trial.suggest_int(f"{group}__onehot_min_freq", 1, 20)
-        )
-    
-    elif encoder == "ordinal":
-        return OrdinalEncoder(
-            handle_unknown="use_encoded_value",
-            encoded_missing_value=-1,
-            unknown_value=-1 
-        )
-        
-    
-    elif encoder == "binary":
-        return BinaryEncoder()
-    
-    elif encoder == "target":
-        return TargetEncoder(
-            smoothing=trial.suggest_float(f"{group}__target_smoothing", 0.5, 12.0)
-        )
-    else:
-        raise ValueError("Unsupported encoder type")
+# enc_bool = TargetEncoder(
+#     smoothing=best_params['bool__target_smoothing']
+# )
+enc_bool = BinaryEncoder(
 
-
-from sklearn.utils import resample
-x_small, y_small = resample(x_train, y_train, n_samples=30000, random_state=42)
-
-
-def objective(trial):
-    
-    preprocessor = ColumnTransformer([
-        ("bool", getEncoder(trial, "bool"), groupBool),
-        ("ord", getEncoder(trial, "ord"), groupOrder),
-        ("other", getEncoder(trial, "other"), groupOther),
-    ], remainder="drop")
-
-    model = RandomForestClassifier(
-        n_estimators=trial.suggest_int("n_estimators", 100, 500),
-        max_depth=trial.suggest_int("max_depth", 5, 40),
-        criterion=trial.suggest_categorical("criterion", ["gini", "entropy"]),
-        random_state=42,
-        class_weight='balanced'
-    )
-
-    pipe = Pipeline([
-    ('preprocessing', preprocessor),
-    ('standardization', StandardScaler()),
-    ('regressor', model)]
 )
-    values = cross_validate(
-        pipe, 
-        x_small, y_small,
-        scoring={
-            'recall' : make_scorer(recall_score, pos_label=1),
-            'precision' : make_scorer(precision_score, pos_label = 1)
-        },
-        cv = KFold(shuffle=True, random_state=42, n_splits=8,)
-    )
+enc_ord = TargetEncoder(
+    #handle_unknown='infrequent_if_exist'
+    smoothing=best_paramsRandom['ord__target_smoothing']
+)
+enc_oth = OneHotEncoder (
+    handle_unknown='infrequent_if_exist',
+    sparse_output=False,
+    min_frequency=best_paramsRandom['other__onehot_min_freq']
+)
 
-    recall = values["test_recall"].mean()
-    # precision = values["test_precision"].mean()
-    print(f"Trial {trial.number} - Recall: {recall:.4f} - Params: {trial.params}")
-    return recall
 
-studyHeartRandom = optuna.create_study(storage="sqlite:///model_selection.db", study_name="studyHeartDefinitive", direction="maximize" , load_if_exists=True)
-studyHeartRandom.optimize(objective, n_trials=1, show_progress_bar=True)
-joblib.dump(studyHeartRandom, 'bestHeartPred.joblib')
+preprocessor = ColumnTransformer([
+    ('bool', enc_bool, groupBool),
+    ('ord', enc_ord, groupOrder),
+    ('other', enc_oth, groupOther)
+
+])
+best_model = RandomForestClassifier(
+    n_estimators=best_paramsRandom['n_estimators'],
+    max_depth=best_paramsRandom['max_depth'],
+    criterion=best_paramsRandom['criterion'],
+    #class_weight=best_params.get('class_weight', None),
+    random_state=42,
+    class_weight='balanced'
+)
+pipe = Pipeline([
+    ("preprocessor", preprocessor),  
+    ("standardization", StandardScaler()),
+    ("classifier", best_model)
+])
+
+pipe.fit(x_train, y_train)
+
+joblib.dump(pipe, 'bestHeartPred.joblib')
