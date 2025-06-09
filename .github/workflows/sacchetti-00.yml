@@ -1,28 +1,42 @@
-name: action di Sacchetti #github action dice che ci deve essere una top level key name
-on:  # dizionario con chiave push
-  push: # una qualsiasi azione di push attiva questa action
+name: action di Sacchetti
+
+on:
+  push:
+
 jobs: 
   ciao:
-    runs-on: ubuntu-latest # qui vuole il sistema operativo
-    steps: #lista di comandi
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: | # il pipe serve a definire una stringa multilinea
+          sparse-checkout: |
             .github
             sacchetti
+            test_app.py
+            app.py
       - run: ls -la
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13' 
-      - run: python --
+          python-version: '3.10'  # Usa una versione stabile (non '3.13' che è instabile o non ancora disponibile)
+
+      - run: python --version
+
       - run: pip install scikit-learn joblib pandas
       - run: pip install optuna 
       - run: pip install xgboost
       - run: pip install category_encoders
-      - run: python heart.py
+      - run: pip install flask pytest
+
+      - name: Run training script
+        run: python heart.py
         working-directory: sacchetti
+
+      - name: Run tests with pytest
+        run: pytest
+
       - run: ls -la
         working-directory: sacchetti
+
       - uses: actions/upload-artifact@v4
         with:
           name: heartDiseasePrediction-w.0.0.1-RC
