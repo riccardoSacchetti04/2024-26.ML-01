@@ -1,0 +1,26 @@
+name: action di Sacchetti #github action dice che ci deve essere una top level key name
+on:  # dizionario con chiave push
+  push: # una qualsiasi azione di push attiva questa action
+jobs: 
+  ciao:
+    runs-on: ubuntu-latest # qui vuole il sistema operativo
+    steps: #lista di comandi
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: | # il pipe serve a definire una stringa multilinea
+            .github
+            sacchetti
+      - run: ls -la
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13' 
+      - run: python --
+      - run: pip install scikit-learn joblib pandas
+      - run: python heart.py
+        working-directory: sacchetti
+      - run: ls -la
+        working-directory: sacchetti
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heartDiseasePrediction-w.0.0.1-RC
+          path: sacchetti\bestHeartPred.joblib
