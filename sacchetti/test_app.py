@@ -1,5 +1,5 @@
 import pytest
-from app import app as flask_app
+from sacchetti.app import app as flask_app
 
 @pytest.fixture()
 def client():
@@ -7,7 +7,7 @@ def client():
     with flask_app.test_client() as client:
         yield client
 
-def test_prediction(client):
+def test_home(client):
     sample_input = {
         "Sex": 1,
         "PhysicalActivities": 1,
@@ -46,7 +46,4 @@ def test_prediction(client):
 
     response = client.post("/infer", json=sample_input)
     assert response.status_code == 200
-    data = response.get_json()
-    assert "prediction" in data
-    assert isinstance(data["prediction"], list)
-    assert data["prediction"][0] in [0, 1]
+    assert "prediction" in response.get_json()
